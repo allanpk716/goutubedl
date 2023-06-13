@@ -207,6 +207,7 @@ type Options struct {
 	DownloadThumbnail bool
 	DownloadSubtitles bool
 	ProxyUrl          string // --proxy URL  http://host:port or socks5://host:port
+	Filter            string // -f
 	DebugLog          Printer
 	StderrFn          func(cmd *exec.Cmd) io.Writer // if not nil, function to get Writer for stderr
 	HTTPClient        *http.Client                  // Client for download thumbnail and subtitles (nil use http.DefaultClient)
@@ -262,6 +263,10 @@ func infoFromURL(ctx context.Context, rawURL string, options Options) (info Info
 
 	if options.ProxyUrl != "" {
 		cmd.Args = append(cmd.Args, "--proxy", options.ProxyUrl)
+	}
+
+	if options.Filter != "" {
+		cmd.Args = append(cmd.Args, "-f", options.Filter)
 	}
 
 	if options.Type == TypePlaylist {
@@ -458,7 +463,12 @@ func (result Result) Download(ctx context.Context, filter string) (*DownloadResu
 	// don't need to specify if direct as there is only one
 	// also seems to be issues when using filter with generic extractor
 	if !result.Info.Direct {
-		cmd.Args = append(cmd.Args, "-f", filter)
+
+		nowFilter := filter
+		if nowFilter == "" {
+			nowFilter = result.Options.Filter
+		}
+		cmd.Args = append(cmd.Args, "-f", nowFilter)
 	}
 
 	if result.Options.ProxyUrl != "" {
